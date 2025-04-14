@@ -1,0 +1,128 @@
+let vocabularyList = JSON.parse(localStorage.getItem('vocabularyList')) || [];
+let currentCardIndex = 0;
+let isFlipped = false;
+document.addEventListener('DOMContentLoaded', function () {
+    initializeFlashcards();
+    updateCategoryFilter();
+
+    const flashcard = document.querySelector('.flashcard');
+    if (flashcard) {
+        flashcard.addEventListener('click', flipCard);
+    }
+});
+function flipCard() {
+    const flashcardInner = document.querySelector('.flashcard-inner');
+    if (flashcardInner) {
+        isFlipped = !isFlipped;
+        flashcardInner.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    }
+}
+document.querySelector('.flashcard').addEventListener('click', flipCard);
+
+function initializeFlashcards() {
+    if (vocabularyList.length === 0) {
+        document.getElementById('cardWord').textContent = 'No words available';
+        document.getElementById('cardMeaning').textContent = 'Please add some words';
+        updateControls(true); // Disable controls
+        return;
+    }
+
+    displayCurrentCard();
+    updateWordList();
+    updateProgress();
+}
+
+function displayCurrentCard() {
+    const currentWord = vocabularyList[currentCardIndex];
+    document.getElementById('cardWord').textContent = currentWord.word;
+    document.getElementById('cardMeaning').textContent = currentWord.meaning;
+}
+
+function nextCard() {
+    if (currentCardIndex < vocabularyList.length - 1) {
+        currentCardIndex++;
+        isFlipped = false;
+        document.querySelector('.flashcard-inner').style.transform = 'rotateY(0deg)';
+        displayCurrentCard();
+        updateProgress();
+    }
+}
+
+function previousCard() {
+    if (currentCardIndex > 0) {
+        currentCardIndex--;
+        isFlipped = false;
+        document.querySelector('.flashcard-inner').style.transform = 'rotateY(0deg)';
+        displayCurrentCard();
+        updateProgress();
+    }
+}
+
+function markAsLearned() {
+    const currentWord = vocabularyList[currentCardIndex];
+    currentWord.learned = true;
+    localStorage.setItem('vocabularyList', JSON.stringify(vocabularyList));
+    updateWordList();
+    nextCard();
+}
+
+function updateWordList() {
+    const wordListBody = document.getElementById('wordListBody');
+    wordListBody.innerHTML = '';
+
+    vocabularyList.forEach((word) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">${word.word}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${word.meaning}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="${word.learned ? '' : ''}">
+                    ${word.learned ? 'Learned' : 'Not Learned'}
+                </span>
+            </td>
+        `;
+        wordListBody.appendChild(row);
+    });
+}
+function updateProgress() {
+    const progressText = document.getElementById('progressText');
+    const progressBar = document.getElementById('progressBar');
+
+    progressText.textContent = `${currentCardIndex + 1}/${vocabularyList.length}`;
+    const progressPercentage = ((currentCardIndex + 1) / vocabularyList.length) * 100;
+    progressBar.style.width = `${progressPercentage}%`;
+}
+
+function updateCategoryFilter() {
+    const categoryFilter = document.getElementById('categoryFilter');
+    const categories = [...new Set(vocabularyList.map(word => word.category))];
+
+    categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    categories.forEach(category => {
+        if (category) {
+            categoryFilter.innerHTML += `<option value="${category}">${category}</option>`;
+        }
+    });
+
+    categoryFilter.addEventListener('change', function () {
+        const selectedCategory = this.value;
+        if (selectedCategory) {
+            vocabularyList = JSON.parse(localStorage.getItem('vocabularyList')).filter(
+                word => word.category === selectedCategory
+            );
+        } else {
+            vocabularyList = JSON.parse(localStorage.getItem('vocabularyList')) || [];
+        }
+        currentCardIndex = 0;
+        isFlipped = false;
+        document.querySelector('.flashcard-inner').style.transform = 'rotateY(0deg)';
+        initializeFlashcards();
+    });
+}
+
+function updateControls(disabled) {
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.disabled = disabled;
+    });
+}

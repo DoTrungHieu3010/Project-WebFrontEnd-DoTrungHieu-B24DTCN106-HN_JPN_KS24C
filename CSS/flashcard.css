@@ -105,3 +105,8 @@ body {
 .fc-e {
     font-weight: bold;
 }
+
+.table-content {
+    border-radius: 8px;
+    margin: 0;
+}
